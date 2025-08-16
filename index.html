@@ -1,162 +1,175 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-<meta charset="UTF-8">
-<title>武器改装交互图</title>
-<style>
-  body { 
-    display: flex; 
-    font-family: sans-serif; 
-    flex-direction: column;
-    align-items: center;
-  }
-  #details {
-    margin-left: 20px;
-    padding: 10px;
-    width: 320px;
-    border: 1px solid #ccc;
-    background: #fafafa;
-  }
-  #content {
-    display: flex;
-    margin-bottom: 20px;
-  }
-  #legend {
-    margin-top: 20px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    background: #fafafa;
-    width: 900px;
-  }
-  .legend-item {
-    display: flex;
-    align-items: center;
-    margin: 5px 0;
-  }
-  .legend-color {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #000;
-    margin-right: 10px;
-  }
-  #weaponComment {
-    margin-top: 10px;
-    padding: 10px;
-    background: #f0f0f0;
-    border-radius: 5px;
-    font-style: italic;
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>三角洲枪械改装方案快速查询</title>
+  <style>
+    body {
+      display: flex;
+      font-family: sans-serif;
+      flex-direction: column;
+      align-items: center;
+    }
+    #details {
+      margin-left: 20px;
+      padding: 10px;
+      width: 320px;
+      border: 1px solid #ccc;
+      background: #fafafa;
+    }
+    #content {
+      display: flex;
+      margin-bottom: 20px;
+    }
+    #legend {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background: #fafafa;
+      width: 900px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin: 5px 0;
+    }
+    .legend-color {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #000;
+      margin-right: 10px;
+    }
+    #weaponComment {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f0f0f0;
+      border-radius: 5px;
+      font-style: italic;
+    }
+    #weaponImg {
+      width: 200px;
+      margin-top: 10px;
+      display: none;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+  </style>
 </head>
+
 <body>
-
-<div id="content">
-  <canvas id="mapCanvas" width="900" height="900" style="border:1px solid #ccc;"></canvas>
-
-  <div id="details">
-    <h3>改装方案</h3>
-    <div id="weaponName">点击武器查看方案</div>
-    <div id="weaponMods"></div>
-    <div id="weaponComment"></div>
+  <!-- ===== 页面标题区 ===== -->
+  <div id="header" style="text-align: center; margin-bottom: 20px;">
+    <h1 style="margin: 0; font-size: 32px;">三角洲改枪方案快速查询</h1>
+    <h3 style="margin: 5px 0 0 0; font-weight: normal; font-size: 16px; color: #555;">
+      更新时间: 2025-08-16 &nbsp;|&nbsp; 作者: bilibili: Tayvick
+    </h3>
   </div>
-</div>
 
-<div id="legend">
-  <h3>武器等级图例</h3>
-  <div class="legend-item"><div class="legend-color" style="background-color: red;"></div><div>T1 - 版本答案</div></div>
-  <div class="legend-item"><div class="legend-color" style="background-color: orange;"></div><div>T2 - 有特长的枪</div></div>
-  <div class="legend-item"><div class="legend-color" style="background-color: yellow;"></div><div>T3 - 开枪装装样子</div></div>
-  <div class="legend-item"><div class="legend-color" style="background-color: green;"></div><div>T4 - 除了便宜没有存在的意义</div></div>
-</div>
+  <div id="content">
+    <canvas id="mapCanvas" width="900" height="900" style="border:1px solid #ccc;"></canvas>
+    <div id="details">
+      <h3>改装方案</h3>
+      <div id="weaponName">点击武器查看方案</div>
+      <img id="weaponImg" src="" alt="">
+      <div id="weaponMods"></div>
+      <div id="weaponComment"></div>
+    </div>
+  </div>
 
-<script>
-const canvas = document.getElementById('mapCanvas');
-const ctx = canvas.getContext('2d');
+  <div id="legend">
+    <h3>武器等级图例</h3>
+    <div class="legend-item"><div class="legend-color" style="background-color: red;"></div><div>T1 - 版本答案</div></div>
+    <div class="legend-item"><div class="legend-color" style="background-color: orange;"></div><div>T2 - 有特长的枪</div></div>
+    <div class="legend-item"><div class="legend-color" style="background-color: yellow;"></div><div>T3 - 开枪装装样子</div></div>
+    <div class="legend-item"><div class="legend-color" style="background-color: green;"></div><div>T4 - 除了便宜没有存在的意义</div></div>
+  </div>
 
-const centerX = canvas.width / 2;
-const centerY = canvas.height / 2;
+  <script>
+    const canvas = document.getElementById('mapCanvas');
+    const ctx = canvas.getContext('2d');
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
 
-// ===== 可调参数 =====
-const logicRange = 10;                  // 逻辑坐标范围
-const pointRadius = 10;                 // 圆点半径
-const outlineColor = "#000";            // 圆点轮廓颜色
-const outlineWidth = 3;                 // 圆点轮廓粗细
-const labelOffset = 15;                 // 名称标签与点的水平偏移量
-// ====================
+    // ===== 可调参数 =====
+    const pointRadius = 10; // 默认圆点半径
+    const outlineColor = "#000"; // 圆点轮廓颜色
+    const outlineWidth = 3; // 圆点轮廓粗细
+    const labelOffset = 15; // 名称标签偏移
+    const logicRange = 10; // 逻辑坐标范围
+    const scale = (canvas.width / 2) / logicRange; // 每单位逻辑坐标对应像素
 
-const scale = (canvas.width / 2) / logicRange; // 每单位逻辑坐标对应像素
+    // 绘制坐标轴和象限
+    function drawAxes() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-// 绘制坐标轴和象限
-function drawAxes() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "rgba(0,0,0,0.3)"; // ✅ 坐标轴颜色改为浅灰半透明
+      ctx.lineWidth = 2;
 
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // X轴
+      ctx.beginPath();
+      ctx.moveTo(0, centerY);
+      ctx.lineTo(canvas.width, centerY);
+      ctx.stroke();
 
-  ctx.strokeStyle = "#000";
-  ctx.lineWidth = 2;
+      // Y轴
+      ctx.beginPath();
+      ctx.moveTo(centerX, 0);
+      ctx.lineTo(centerX, canvas.height);
+      ctx.stroke();
 
-  // X 轴
-  ctx.beginPath();
-  ctx.moveTo(0, centerY);
-  ctx.lineTo(canvas.width, centerY);
-  ctx.stroke();
+      // 坐标轴标签
+      ctx.font = "20px sans-serif";
+      ctx.fillStyle = "#000";
+      ctx.textAlign = "center";
+      ctx.fillText("控枪容易程度 →", canvas.width - 100, centerY - 10);
 
-  // Y 轴
-  ctx.beginPath();
-  ctx.moveTo(centerX, 0);
-  ctx.lineTo(centerX, canvas.height);
-  ctx.stroke();
+      ctx.save();
+      ctx.translate(centerX - 60, 50);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText("作战距离 →", 0, 0);
+      ctx.restore();
 
-  // 坐标轴标签
-  ctx.font = "20px sans-serif";
-  ctx.fillStyle = "#000";
-  ctx.textAlign = "center";
-  ctx.fillText("控枪容易程度 →", canvas.width - 100, centerY - 10);
+      // 象限标签
+      ctx.font = "bold 60px sans-serif";
+      ctx.fillStyle = "rgba(200,200,200,0.5)";
+      ctx.textAlign = "center";
+      ctx.fillText("被狙击完爆区", centerX - 200, centerY - 200);
+      ctx.fillText("新手区", centerX + 200, centerY - 200);
+      ctx.fillText("猛男区", centerX - 200, centerY + 200);
+      ctx.fillText("进阶区", centerX + 200, centerY + 200);
+    }
 
-  ctx.save();
-  ctx.translate(centerX - 60, 50);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillText("作战距离 →", 0, 0);
-  ctx.restore();
 
-  // 象限标签
-  ctx.font = "bold 60px sans-serif";
-  ctx.fillStyle = "rgba(200,200,200,0.5)";
-  ctx.textAlign = "center";
-  ctx.fillText("被狙击完爆区", centerX - 200, centerY - 200);
-  ctx.fillText("新手区", centerX + 200, centerY - 200);
-  ctx.fillText("猛男区", centerX - 200, centerY + 200);
-  ctx.fillText("进阶区", centerX + 200, centerY + 200);
-}
+    // 武器数据（逻辑坐标 + 半径 + 图片文件）
+    const weapons = [
+      //原点
+      { name: "M4A1", x: 0, y: 0, color: "green", radius: 5, img: "img/m4a1.jpg" },
+      //T1
+      { name: "M14", x: -6, y: -4, color: "red", radius: 15, img: "img/m14.jpg" },
+      { name: "AS VAL", x: -6, y: -6, color: "red", radius: 15, img: "img/asval.jpg" },
+      { name: "腾龙", x: 3, y: 1, color: "red", radius: 15, img: "img/qbz191.jpg" },
+      { name: "SR-3M", x: 5, y: -6, color: "red", radius: 15, img: "img/sr3m.jpg" },
+      //T2
+      { name: "M7", x: -1, y: 5, color: "orange", radius: 12, img: "img/m7.jpg" },
+      { name: "K416", x: 4, y: -4, color: "orange", radius: 12, img: "img/k416.jpg" },
+      { name: "K437", x: 4, y: 4, color: "orange", radius: 12, img: "img/k437.jpg" },
+      { name: "MP7", x: 7, y: -9, color: "orange", radius: 12, img: "img/mp7.jpg" },
+      //T3
+      { name: "AKM", x: -3, y: 1, color: "yellow", radius: 10, img: "img/akm.jpg" },
+      { name: "AUG", x: 8, y: 7, color: "yellow", radius: 10, img: "img/aug.jpg" },
+      { name: "AK-12", x: 5, y: 5, color: "yellow", radius: 10, img: "img/ak12.jpg" },
+      { name: "KC-17", x: -2, y: 5, color: "yellow", radius: 10, img: "img/kc17.jpg" },
+      { name: "ASH-12", x: -9, y: 0, color: "yellow", radius: 10, img: "img/ash12.jpg" },
+      { name: "SCAR-H", x: -2, y: 2, color: "yellow", radius: 10, img: "img/scarh.jpg" },
+      //T4
+      { name: "G3", x: 0, y: 7.5, color: "green", radius: 8, img: "img/g3.jpg" },
+      { name: "QBZ95-1", x: 8, y: 6.5, color: "green", radius: 8, img: "img/qbz95.jpg" },
+      { name: "MP5", x: 9, y: -7, color: "green", radius: 8, img: "img/mp5.jpg" }
+    ];
 
-// 武器数据（逻辑坐标）
-const weapons = [
-  { name: "M4A1", x: 0, y: 0, color: "green" },
-  //T1
-  { name: "M14", x: -6, y: -4, color: "red" },
-  { name: "AS VAL", x: -6, y: -6, color: "red" },
-  { name: "腾龙", x: 3, y: 1, color: "red" },
-  { name: "SR-3M", x: 5, y: -6, color: "red" },
-  //T2
-  { name: "M7", x: -1, y: 5, color: "orange" },
-  { name: "K416", x: 4, y: -4, color: "orange" },
-  { name: "K437", x: 4, y: 4, color: "orange" },
-  { name: "MP7", x: 7, y: -9, color: "orange" },
-  //T3
-  { name: "AKM", x: -3, y: 1, color: "yellow" },
-  { name: "AUG", x: 8, y: 7, color: "yellow" },
-  { name: "AK-12", x: 5, y: 5, color: "yellow" },
-  { name: "KC-17", x: -2, y: 5, color: "yellow" },
-  { name: "ASH-12", x: -9, y: 0, color: "yellow" },
-  { name: "SCAR-H", x: -2, y: 2, color: "yellow" },
-  //T4
-  { name: "G3", x: 0, y: 7.5, color: "green" },
-  { name: "QBZ95-1", x: 8, y: 6.5, color: "green" },
-  { name: "MP5", x: 9, y: -7, color: "green" }
-];
-
-// 改装方案和评语
+    // 改装方案和评语（保留你原来的数据，可根据需要补全）
 const weaponData = {
   "M4A1": {
     comment: "伤害不足，准心乱跳。垃圾中的战斗机，新手教学用枪。",
@@ -290,66 +303,63 @@ const weaponData = {
   }
 };
 
-// 逻辑坐标转像素坐标
-function logicToPixelX(x) {
-  return centerX + x * scale;
-}
-function logicToPixelY(y) {
-  return centerY - y * scale;
-}
+    function logicToPixelX(x) { return centerX + x * scale; }
+    function logicToPixelY(y) { return centerY - y * scale; }
 
-// 绘制武器点
-function drawWeapons() {
-  weapons.forEach(w => {
-    const pixelX = logicToPixelX(w.x);
-    const pixelY = logicToPixelY(w.y);
-    
-    // 绘制圆点
-    ctx.beginPath();
-    ctx.arc(pixelX, pixelY, pointRadius, 0, Math.PI * 2);
-    ctx.fillStyle = w.color;
-    ctx.fill();
-    ctx.strokeStyle = outlineColor;
-    ctx.lineWidth = outlineWidth;
-    ctx.stroke();
-    
-    // 绘制武器名称标签
-    ctx.font = "14px sans-serif";
-    ctx.fillStyle = "#000";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    ctx.fillText(w.name, pixelX + labelOffset, pixelY);
-  });
-}
+    function drawWeapons() {
+      weapons.forEach(w => {
+        const pixelX = logicToPixelX(w.x);
+        const pixelY = logicToPixelY(w.y);
 
-// 点击事件
-canvas.addEventListener('click', e => {
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
+        // 绘制圆点
+        ctx.beginPath();
+        ctx.arc(pixelX, pixelY, w.radius || pointRadius, 0, Math.PI * 2);
+        ctx.fillStyle = w.color;
+        ctx.fill();
+        ctx.strokeStyle = outlineColor;
+        ctx.lineWidth = outlineWidth;
+        ctx.stroke();
 
-  weapons.forEach(w => {
-    const dx = mouseX - logicToPixelX(w.x);
-    const dy = mouseY - logicToPixelY(w.y);
-    if (Math.sqrt(dx*dx + dy*dy) < pointRadius) {
-      const data = weaponData[w.name] || {};
-      const mods = data.mods || [];
-      
-      document.getElementById('weaponName').textContent = w.name;
-      document.getElementById('weaponComment').textContent = data.comment || "暂无评价";
-      document.getElementById('weaponMods').innerHTML = mods.map(m => `
-        <div><b>${m.name}</b></div>
-        <div>代码: ${m.code}</div>
-        <div>价格: ${m.price}</div>
-      `).join('<hr>');
+        // 绘制斜侧文字
+        ctx.save(); // 保存当前状态
+        ctx.translate(pixelX + labelOffset -6, pixelY -15); // x多5px，y上移3px
+        ctx.rotate(-Math.PI / 6); // 旋转 -30°，顺时针为正
+        ctx.font = "bold 18px sans-serif";
+        ctx.fillStyle = "#000000";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillText(w.name, 0, 0);
+        ctx.restore(); // 恢复之前状态，避免影响其他绘制
+      });
     }
+
+
+  canvas.addEventListener('click', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    weapons.forEach(w => {
+      const dx = mouseX - logicToPixelX(w.x);
+      const dy = mouseY - logicToPixelY(w.y);
+      if (Math.sqrt(dx*dx + dy*dy) < (w.radius || pointRadius)) {
+        const data = weaponData[w.name] || {};
+        const mods = data.mods || [];
+        document.getElementById('weaponName').textContent = w.name;
+        document.getElementById('weaponComment').textContent = data.comment || "暂无评价";
+        document.getElementById('weaponMods').innerHTML = mods.map(m => `
+          <div><b>${m.name}</b></div>
+          <div>代码: ${m.code}</div>
+          <div>价格: ${m.price}</div>
+        `).join('<hr>');
+        const imgEl = document.getElementById('weaponImg');
+        imgEl.src = w.img;  // ✅ 这里改成直接使用路径
+        imgEl.style.display = "block";
+      }
+    });
   });
-});
 
-// 初始化
-drawAxes();
-drawWeapons();
-</script>
-
+    drawAxes();
+    drawWeapons();
+  </script>
 </body>
 </html>
