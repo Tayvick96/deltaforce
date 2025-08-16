@@ -78,10 +78,10 @@
 
   <div id="legend">
     <h3>武器等级图例</h3>
-    <div class="legend-item"><div class="legend-color" style="background-color: red;"></div><div>T1 - 版本答案</div></div>
-    <div class="legend-item"><div class="legend-color" style="background-color: orange;"></div><div>T2 - 有特长的枪</div></div>
-    <div class="legend-item"><div class="legend-color" style="background-color: yellow;"></div><div>T3 - 开枪装装样子</div></div>
-    <div class="legend-item"><div class="legend-color" style="background-color: green;"></div><div>T4 - 除了便宜没有存在的意义</div></div>
+    <div class="legend-item"><div class="legend-color" style="background-color: red;"></div><div>T1 - 版本答案，强，贵</div></div>
+    <div class="legend-item"><div class="legend-color" style="background-color: orange;"></div><div>T2 - 有特长的枪，有明显的优势</div></div>
+    <div class="legend-item"><div class="legend-color" style="background-color: yellow;"></div><div>T3 - 有特定用途，或者性价比高</div></div>
+    <div class="legend-item"><div class="legend-color" style="background-color: green;"></div><div>T4 - 在低强度战局能用，并且便宜</div></div>
   </div>
 
   <script>
@@ -179,14 +179,14 @@ const weaponData = {
   },
   //T1
   "M14": {
-    comment: "伤害足够，但是射程是假的，打中距离稳定性不足。目前操控速度被削弱，强度明显降低。",
+    comment: "<span style='color:red;'>优点：</span>伤害足够，前几发弹道很直，容易爆头，大口径爆头伤害也高，在中近距离相比小口径有巨大的优势。<span style='color:red;'>缺点：</span>但是射程是假的，打中距离稳定性不足。目前操控速度被削弱，强度明显降低。",
     mods: [
       { name: "低改", code: "M14射手步枪-烽火地带-6H5D9D4072GLCC97UAN1F", price: "55w" },
       { name: "满改", code: "M14射手步枪-烽火地带-6H5DA1K072GLCC97UAN1F", price: "70w" }
     ]
   },
   "腾龙": {
-    comment: "版本的王，策划爱国之作，好用爱用。两枪爆头，小口径之王。",
+    comment: "版本的王，策划爱国之作，好用爱用。<span style='color:red;'>优点：</span>两枪爆头，小口径之王。任何小口径枪都碰瓷不了腾龙的秒杀能力。<span style='color:red;'>缺点：</span>弹道不行，非常需要水平控制配件。",
     mods: [
       { name: "烂改", code: "腾龙突击步枪-烽火地带-6H5DAG4072GLCC97UAN1F", price: "36w" },
       { name: "满改", code: "腾龙突击步枪-烽火地带-6H5DAKC072GLCC97UAN1F", price: "50w" },
@@ -194,14 +194,14 @@ const weaponData = {
     ]
   },
   "AS VAL": {
-    comment: "近距离俘虏任何武器，究极融甲枪。难操控，中距离开始变弱，适合有控枪能力的高手。",
+    comment: "<span style='color:red;'>优点：</span>近距离俘虏任何武器，究极融甲枪。<span style='color:red;'>缺点：</span>难操控，中距离开始变弱，适合有控枪能力的高手。并且子弹消耗量大，但是仍然不推荐使用四级蛋，优势就要发挥到极致。",
     mods: [
       { name: "低改", code: "AS Val突击步枪-烽火地带-6H5DB3S072GLCC97UAN1F", price: "30w" },
       { name: "满改", code: "AS Val突击步枪-烽火地带-6H5DB6S072GLCC97UAN1F", price: "50w" }
     ]
   },
   "SR-3M": {
-    comment: "高额伤害让他衰减后还能和T2武器掰掰腕子，同时在近距离除了大爹枪以外都能有优势，并且腰射没有被削弱，双伤很高，控枪难度也低，非常推荐进阶新手使用。",
+    comment: "<span style='color:red;'>优点：</span>高额伤害让他衰减后还能和T2武器掰掰腕子，同时在近距离除了大爹枪以外都能有优势，并且腰射没有被削弱，双伤很高，控枪难度也低，非常推荐进阶新手使用。<span style='color:red;'>缺点：</span>有效伤害距离过低，30m以外完全就是T2级武器的强度，适合组排的一号位玩家使用。",
     mods: [
       { name: "100腰射版", code: "SR-3M紧凑突击步枪-烽火地带-6H5DBCK072GLCC97UAN1F", price: "35w" },
       { name: "均衡", code: "SR-3M紧凑突击步枪-烽火地带-6H5DBNK072GLCC97UAN1F", price: "40w" },
@@ -210,14 +210,14 @@ const weaponData = {
   },
   //T2
   "M7": {
-    comment: "加强后(堤风超长枪管方案)中远距离伤害可观，最大问题是贴脸打不过的枪太多了，射速硬伤，实在摸不到T1。",
+    comment: "<span style='color:red;'>优点：</span>加强后(堤风超长枪管方案)中远距离伤害可观。<span style='color:red;'>缺点：</span>最大问题是贴脸打不过的枪太多了，射速硬伤。同时M7的后坐力太大，钛金枪口是M7亲爹，改装价格也非常贵，实在摸不到T1。",
     mods: [
       { name: "低改", code: "M7战斗步枪-烽火地带-6H5E6H8072GLCC97UAN1F", price: "38w" },
       { name: "满改", code: "M7战斗步枪-烽火地带-6H5E6OG072GLCC97UAN1F", price: "50w" }
     ]
   },
   "K416": {
-    comment: "稳定性高，改法多样，配件丰富，适合新手进阶。近距离面对优势武器有一战之力，同时半改方案也能在中距离作战中有发挥，满改更是能全距离通吃。",
+    comment: "<span style='color:red;'>优点：</span>稳定性高，改法多样，配件丰富，适合新手进阶。近距离面对优势武器有一战之力，同时满改方案也能在中距离作战中有发挥。<span style='color:red;'>缺点：</span>单发伤害过低，对跟枪和控枪能力要求高，打中四肢代价也比较大，很容易刮痧。改装费用也相对较贵。",
     mods: [
       { name: "低改", code: "K416突击步枪-烽火地带-6H5E75C072GLCC97UAN1F", price: "38w" },
       { name: "满改", code: "K416突击步枪-烽火地带-6H5E80K072GLCC97UAN1F", price: "60w" }
@@ -232,7 +232,7 @@ const weaponData = {
     ]
   },
   "MP7": {
-    comment: "近战永远的爹，削了腰射一样碾碎一切。当前版本更推荐兼顾腰射的中距离改法，但问题是满改成本略高，并且中远距离实在太弱势，配合狙击双枪成本更高了，因此放在T2推荐。",
+    comment: "<span style='color:red;'>优点：</span>近战永远的爹，削了腰射一样碾碎一切（除了AS VAL）。当前版本更推荐兼顾腰射的中距离改法。<span style='color:red;'>缺点：</span>但问题是满改成本略高，并且中远距离实在太弱势，配合狙击双枪成本更高了，因此放在T2推荐。",
     mods: [
       { name: "低改", code: "MP7冲锋枪-烽火地带-6H5EA3S072GLCC97UAN1F", price: "35w" },
       { name: "满改", code: "MP7冲锋枪-烽火地带-6H5EA7S072GLCC97UAN1F", price: "50w" }
@@ -345,7 +345,7 @@ const weaponData = {
         const data = weaponData[w.name] || {};
         const mods = data.mods || [];
         document.getElementById('weaponName').textContent = w.name;
-        document.getElementById('weaponComment').textContent = data.comment || "暂无评价";
+        document.getElementById('weaponComment').innerHTML = data.comment || "暂无评价";
         document.getElementById('weaponMods').innerHTML = mods.map(m => `
           <div><b>${m.name}</b></div>
           <div>代码: ${m.code}</div>
