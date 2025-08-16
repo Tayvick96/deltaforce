@@ -53,6 +53,32 @@
       border: 1px solid #ccc;
       border-radius: 5px;
     }
+    .filter-btn {
+      margin: 2px;
+      padding: 5px 10px;
+      border: 1px solid #888;
+      background-color: #f0f0f0;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    .filter-btn.selected {
+      background-color: #4CAF50;
+      color: white;
+      border-color: #4CAF50;
+    }
+    .mod-tags {
+      display: flex;
+      flex-wrap: wrap;
+      margin: 5px 0;
+    }
+    .mod-tag {
+      background: #e0e0e0;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-size: 12px;
+      margin-right: 5px;
+      margin-bottom: 5px;
+    }
   </style>
 </head>
 
@@ -64,6 +90,39 @@
       更新时间: 2025-08-16 &nbsp;|&nbsp; 作者: bilibili: Tayvick
     </h3>
   </div>
+
+  <div id="filters" style="margin: 20px 0; padding: 10px; border:1px solid #ccc; background:#f9f9f9; width:900px;">
+    <h3>武器推荐筛选</h3>
+    
+  <div>
+    <p>1. 你的打法风格：</p>
+    <button class="filter-btn" data-type="playStyle" onclick="setFilter('playStyle','aggressive', this)">激进：我想抓住一切能击杀的机会</button>
+    <button class="filter-btn" data-type="playStyle" onclick="setFilter('playStyle','balanced', this)">平衡：我看情况</button>
+    <button class="filter-btn" data-type="playStyle" onclick="setFilter('playStyle','conservative', this)">保守：我不能死活着才有希望</button>
+  </div>
+
+  <div>
+    <p>2. 你的对敌接触策略：</p>
+    <button class="filter-btn" data-type="engageStyle" onclick="setFilter('engageStyle','close', this)">贴脸：离得更近才能打得越准</button>
+    <button class="filter-btn" data-type="engageStyle" onclick="setFilter('engageStyle','balanced', this)">平衡：我看情况</button>
+    <button class="filter-btn" data-type="engageStyle" onclick="setFilter('engageStyle','range', this)">架枪：在我的射程内就没有必要弄脏衣服</button>
+  </div>
+
+  <div>
+    <p>3. 你对武器成本的敏感度：</p>
+    <button class="filter-btn" data-type="costStyle" onclick="setFilter('costStyle','lavish', this)">豪掷千金：钱就是用来花的</button>
+    <button class="filter-btn" data-type="costStyle" onclick="setFilter('costStyle','balanced', this)">平衡：我看情况</button>
+    <button class="filter-btn" data-type="costStyle" onclick="setFilter('costStyle','thrifty', this)">铁公鸡：我就要花小钱办大事</button>
+  </div>
+
+    <div style="margin-top:10px;">
+      <button onclick="filterWeapons()">筛选推荐</button>
+      <button onclick="resetFilters()" style="margin-left:10px;">重置筛选</button>
+    </div>
+
+    <div id="filterResults" style="margin-top:10px;"></div>
+  </div>
+
 
   <div id="content">
     <canvas id="mapCanvas" width="900" height="900" style="border:1px solid #ccc;"></canvas>
@@ -79,8 +138,8 @@
   <div id="legend">
     <h3>武器等级图例</h3>
     <div class="legend-item"><div class="legend-color" style="background-color: red;"></div><div>T1 - 版本答案，强，贵</div></div>
-    <div class="legend-item"><div class="legend-color" style="background-color: orange;"></div><div>T2 - 有特长的枪，有明显的优势</div></div>
-    <div class="legend-item"><div class="legend-color" style="background-color: yellow;"></div><div>T3 - 有特定用途，或者性价比高</div></div>
+    <div class="legend-item"><div class="legend-color" style="background-color: rgb(255, 102, 0);"></div><div>T2 - 有特长的枪，有明显的优势</div></div>
+    <div class="legend-item"><div class="legend-color" style="background-color: rgb(255, 217, 0);"></div><div>T3 - 有特定用途，或者性价比高</div></div>
     <div class="legend-item"><div class="legend-color" style="background-color: green;"></div><div>T4 - 在低强度战局能用，并且便宜</div></div>
   </div>
 
@@ -89,6 +148,110 @@
     const ctx = canvas.getContext('2d');
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
+
+    const currentFilters = {
+      playStyle: null,
+      engageStyle: null,
+      costStyle: null
+    };
+
+    function setFilter(type, value, btn) {
+      currentFilters[type] = value;
+      // 清除同组按钮的选中状态
+      document.querySelectorAll(`.filter-btn[data-type='${type}']`).forEach(b => {
+        b.classList.remove('selected');
+      });
+
+      // 当前按钮设为选中
+      btn.classList.add('selected');
+    }
+
+    function resetFilters() {
+      currentFilters.playStyle = null;
+      currentFilters.engageStyle = null;
+      currentFilters.costStyle = null;
+      
+      // 清除所有按钮的选中状态
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.remove('selected');
+      });
+      
+      document.getElementById('filterResults').innerHTML = '';
+    }
+
+    function filterWeapons() {
+      // 检查无效组合
+      if (currentFilters.playStyle === 'aggressive' && currentFilters.engageStyle === 'range') {
+        document.getElementById('filterResults').innerHTML = 
+          `<div class="invalid-combination">
+            ⚠️ 激进风格不适合架枪策略，激进玩家应该选择更主动的接触方式
+          </div>`;
+        return;
+      }
+      
+      if (currentFilters.playStyle === 'conservative' && currentFilters.engageStyle === 'close') {
+        document.getElementById('filterResults').innerHTML = 
+          `<div class="invalid-combination">
+            ⚠️ 保守风格不适合贴脸作战，保守玩家应保持安全距离
+          </div>`;
+        return;
+      }
+
+      const filteredWeapons = [];
+
+      weapons.forEach(weapon => {
+        const weaponInfo = weaponData[weapon.name];
+        if (!weaponInfo) return;
+
+        const matchingMods = (weaponInfo.mods || []).filter(mod => {
+          const modTags = mod.tags || {};
+          if (currentFilters.playStyle && modTags.playStyle !== currentFilters.playStyle) return false;
+          if (currentFilters.engageStyle && modTags.engageStyle !== currentFilters.engageStyle) return false;
+          if (currentFilters.costStyle && modTags.costStyle !== currentFilters.costStyle) return false;
+          return true;
+        });
+
+        // 如果有匹配的改装或者当前没有任何筛选条件，则显示武器
+        if (matchingMods.length > 0 || (!currentFilters.playStyle && !currentFilters.engageStyle && !currentFilters.costStyle)) {
+          filteredWeapons.push({
+            weapon,
+            weaponInfo,
+            mods: matchingMods.length > 0 ? matchingMods : weaponInfo.mods || []
+          });
+        }
+      });
+
+      // 显示结果
+      const resultDiv = document.getElementById('filterResults');
+      if (filteredWeapons.length === 0) {
+        resultDiv.innerHTML = "<p>没有符合条件的推荐武器</p>";
+        return;
+      }
+
+      const displayCount = Math.min(filteredWeapons.length, 5);
+      resultDiv.innerHTML = filteredWeapons.slice(0, displayCount).map(item => {
+        const { weapon, weaponInfo, mods } = item;
+        return `
+          <div style="margin-bottom:15px; padding:10px; border:1px solid #ccc; border-radius:5px; background:#fff;">
+            <div style="font-size:18px; font-weight:bold; color:${weapon.color || '#000'}">${weapon.name}</div>
+            <div style="margin:5px 0;">${weaponInfo.comment || "暂无评价"}</div>
+            <div style="margin-top:10px;">
+              ${mods.map(mod => `
+                <div style="margin-bottom:10px; padding:10px; background:#f5f5f5; border-radius:3px;">
+                  <div><b>${mod.name}</b></div>
+                  <div class="mod-tags">${mod.tags ? Object.entries(mod.tags).map(([key, value]) =>
+                    `<span class="mod-tag">${key}: ${value}</span>`
+                  ).join('') : ''}</div>
+                  <div>代码: ${mod.code || '-'}</div>
+                  <div>价格: ${mod.price || '-'}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
 
     // ===== 可调参数 =====
     const pointRadius = 10; // 默认圆点半径
@@ -152,17 +315,17 @@
       { name: "腾龙", x: 3, y: 1, color: "red", radius: 15, img: "img/qbz191.jpg" },
       { name: "SR-3M", x: 5, y: -6, color: "red", radius: 15, img: "img/sr3m.jpg" },
       //T2
-      { name: "M7", x: -1, y: 5, color: "orange", radius: 12, img: "img/m7.jpg" },
-      { name: "K416", x: 4, y: -4, color: "orange", radius: 12, img: "img/k416.jpg" },
-      { name: "K437", x: 4, y: 4, color: "orange", radius: 12, img: "img/k437.jpg" },
-      { name: "MP7", x: 7, y: -9, color: "orange", radius: 12, img: "img/mp7.jpg" },
+      { name: "M7", x: -1, y: 5, color: "rgb(255, 102, 0)", radius: 12, img: "img/m7.jpg" },
+      { name: "K416", x: 4, y: -4, color: "rgb(255, 102, 0)", radius: 12, img: "img/k416.jpg" },
+      { name: "K437", x: 4, y: 4, color: "rgb(255, 102, 0)", radius: 12, img: "img/k437.jpg" },
+      { name: "MP7", x: 7, y: -9, color: "rgb(255, 102, 0)", radius: 12, img: "img/mp7.jpg" },
       //T3
-      { name: "AKM", x: -3, y: 1, color: "yellow", radius: 10, img: "img/akm.jpg" },
-      { name: "AUG", x: 8, y: 7, color: "yellow", radius: 10, img: "img/aug.jpg" },
-      { name: "AK-12", x: 5, y: 5, color: "yellow", radius: 10, img: "img/ak12.jpg" },
-      { name: "KC-17", x: -2, y: 5, color: "yellow", radius: 10, img: "img/kc17.jpg" },
-      { name: "ASH-12", x: -9, y: 0, color: "yellow", radius: 10, img: "img/ash12.jpg" },
-      { name: "SCAR-H", x: -2, y: 2, color: "yellow", radius: 10, img: "img/scarh.jpg" },
+      { name: "AKM", x: -3, y: 1, color: "rgb(255, 217, 0)", radius: 10, img: "img/akm.jpg" },
+      { name: "AUG", x: 8, y: 7, color: "rgb(255, 217, 0)", radius: 10, img: "img/aug.jpg" },
+      { name: "AK-12", x: 5, y: 5, color: "rgb(255, 217, 0)", radius: 10, img: "img/ak12.jpg" },
+      { name: "KC-17", x: -2, y: 5, color: "rgb(255, 217, 0)", radius: 10, img: "img/kc17.jpg" },
+      { name: "ASH-12", x: -9, y: 0, color: "rgb(255, 217, 0)", radius: 10, img: "img/ash12.jpg" },
+      { name: "SCAR-H", x: -2, y: 2, color: "rgb(255, 217, 0)", radius: 10, img: "img/scarh.jpg" },
       //T4
       { name: "G3", x: 0, y: 7.5, color: "green", radius: 8, img: "img/g3.jpg" },
       { name: "QBZ95-1", x: 8, y: 6.5, color: "green", radius: 8, img: "img/qbz95.jpg" },
@@ -181,124 +344,327 @@ const weaponData = {
   "M14": {
     comment: "<span style='color:red;'>优点：</span>伤害足够，前几发弹道很直，容易爆头，大口径爆头伤害也高，在中近距离相比小口径有巨大的优势。<span style='color:red;'>缺点：</span>但是射程是假的，打中距离稳定性不足。目前操控速度被削弱，强度明显降低。",
     mods: [
-      { name: "低改", code: "M14射手步枪-烽火地带-6H5D9D4072GLCC97UAN1F", price: "55w" },
-      { name: "满改", code: "M14射手步枪-烽火地带-6H5DA1K072GLCC97UAN1F", price: "70w" }
+      { name: "低改", code: "M14射手步枪-烽火地带-6H5D9D4072GLCC97UAN1F", price: "55w",
+        tags: {
+          playStyle: "aggressive",
+          engageStyle: "balanced",
+          costStyle: "lavish"
+        }
+      },
+      { name: "满改", code: "M14射手步枪-烽火地带-6H5DA1K072GLCC97UAN1F", price: "70w",
+        tags: {
+          playStyle: "aggressive",
+          engageStyle: "balanced",
+          costStyle: "lavish"
+        }
+      }
     ]
   },
   "腾龙": {
     comment: "版本的王，策划爱国之作，好用爱用。<span style='color:red;'>优点：</span>两枪爆头，小口径之王。任何小口径枪都碰瓷不了腾龙的秒杀能力。<span style='color:red;'>缺点：</span>弹道不行，非常需要水平控制配件。",
     mods: [
-      { name: "烂改", code: "腾龙突击步枪-烽火地带-6H5DAG4072GLCC97UAN1F", price: "36w" },
-      { name: "满改", code: "腾龙突击步枪-烽火地带-6H5DAKC072GLCC97UAN1F", price: "50w" },
-      { name: "近距离版", code: "腾龙突击步枪-烽火地带-6H5DAO8072GLCC97UAN1F", price: "30w" }
+      { name: "烂改", code: "腾龙突击步枪-烽火地带-6H5DAG4072GLCC97UAN1F", price: "36w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "balanced",
+          costStyle: "balanced"
+        }
+      },
+      { name: "满改", code: "腾龙突击步枪-烽火地带-6H5DAKC072GLCC97UAN1F", price: "50w",
+        tags: {
+          playStyle: "aggressive",
+          engageStyle: "balanced",
+          costStyle: "lavish"
+        }
+      },
+      { name: "近距离版", code: "腾龙突击步枪-烽火地带-6H5DAO8072GLCC97UAN1F", price: "30w",
+        tags: {
+          playStyle: "aggressive",
+          engageStyle: "close",
+          costStyle: "thrifty"
+        }
+      }
     ]
   },
   "AS VAL": {
     comment: "<span style='color:red;'>优点：</span>近距离俘虏任何武器，究极融甲枪。<span style='color:red;'>缺点：</span>难操控，中距离开始变弱，适合有控枪能力的高手。并且子弹消耗量大，但是仍然不推荐使用四级蛋，优势就要发挥到极致。",
     mods: [
-      { name: "低改", code: "AS Val突击步枪-烽火地带-6H5DB3S072GLCC97UAN1F", price: "30w" },
-      { name: "满改", code: "AS Val突击步枪-烽火地带-6H5DB6S072GLCC97UAN1F", price: "50w" }
+      { name: "低改", code: "AS Val突击步枪-烽火地带-6H5DB3S072GLCC97UAN1F", price: "30w",
+        tags: {
+          playStyle: "aggressive",
+          engageStyle: "close",
+          costStyle: "balanced"
+        }
+      },
+      { name: "满改", code: "AS Val突击步枪-烽火地带-6H5DB6S072GLCC97UAN1F", price: "50w",
+        tags: {
+          playStyle: "aggressive",
+          engageStyle: "close",
+          costStyle: "lavish"
+        }
+      }
     ]
   },
   "SR-3M": {
     comment: "<span style='color:red;'>优点：</span>高额伤害让他衰减后还能和T2武器掰掰腕子，同时在近距离除了大爹枪以外都能有优势，并且腰射没有被削弱，双伤很高，控枪难度也低，非常推荐进阶新手使用。<span style='color:red;'>缺点：</span>有效伤害距离过低，30m以外完全就是T2级武器的强度，适合组排的一号位玩家使用。",
     mods: [
-      { name: "100腰射版", code: "SR-3M紧凑突击步枪-烽火地带-6H5DBCK072GLCC97UAN1F", price: "35w" },
-      { name: "均衡", code: "SR-3M紧凑突击步枪-烽火地带-6H5DBNK072GLCC97UAN1F", price: "40w" },
-      { name: "这枪不适合满改", code: "改满了打中距离还是不行", price: "别多花冤枉钱了" }
+      { name: "100腰射版", code: "SR-3M紧凑突击步枪-烽火地带-6H5DBCK072GLCC97UAN1F", price: "35w",
+        tags: {
+          playStyle: "aggressive",
+          engageStyle: "close",
+          costStyle: "balanced"
+        }
+      },
+      { name: "均衡", code: "SR-3M紧凑突击步枪-烽火地带-6H5DBNK072GLCC97UAN1F", price: "40w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "close",
+          costStyle: "lavish"
+        }
+      }
     ]
   },
   //T2
   "M7": {
     comment: "<span style='color:red;'>优点：</span>加强后(堤风超长枪管方案)中远距离伤害可观。<span style='color:red;'>缺点：</span>最大问题是贴脸打不过的枪太多了，射速硬伤。同时M7的后坐力太大，钛金枪口是M7亲爹，改装价格也非常贵，实在摸不到T1。",
     mods: [
-      { name: "低改", code: "M7战斗步枪-烽火地带-6H5E6H8072GLCC97UAN1F", price: "38w" },
-      { name: "满改", code: "M7战斗步枪-烽火地带-6H5E6OG072GLCC97UAN1F", price: "50w" }
+      { name: "低改", code: "M7战斗步枪-烽火地带-6H5E6H8072GLCC97UAN1F", price: "38w",
+        tags: {
+          playStyle: "conservative",
+          engageStyle: "range",
+          costStyle: "balanced"
+        }
+      },
+      { name: "满改", code: "M7战斗步枪-烽火地带-6H5E6OG072GLCC97UAN1F", price: "50w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "range",
+          costStyle: "lavish"
+        }
+      }
     ]
   },
   "K416": {
     comment: "<span style='color:red;'>优点：</span>稳定性高，改法多样，配件丰富，适合新手进阶。近距离面对优势武器有一战之力，同时满改方案也能在中距离作战中有发挥。<span style='color:red;'>缺点：</span>单发伤害过低，对跟枪和控枪能力要求高，打中四肢代价也比较大，很容易刮痧。改装费用也相对较贵。",
     mods: [
-      { name: "低改", code: "K416突击步枪-烽火地带-6H5E75C072GLCC97UAN1F", price: "38w" },
-      { name: "满改", code: "K416突击步枪-烽火地带-6H5E80K072GLCC97UAN1F", price: "60w" }
+      { name: "低改", code: "K416突击步枪-烽火地带-6H5E75C072GLCC97UAN1F", price: "38w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "close",
+          costStyle: "balanced"
+        }
+      },
+      { name: "满改", code: "K416突击步枪-烽火地带-6H5E80K072GLCC97UAN1F", price: "60w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "balanced",
+          costStyle: "lavish"
+        }
+      }
     ]
   },
   "K437": {
-    comment: "优点：稳定的肉伤和甲伤，以及标准的35m基础射程，伤害更稳定下限更高。缺点：传奇不耐削王。为了补操控需要牺牲后坐力和据枪，导致远距离性能下降，远了容易被M7、G3俘虏，近点容易被ASVAL 416一群俘虏，优势区间太小。改装费用也贵。推荐新手进阶使用。",
+    comment: "<span style='color:red;'>优点：</span>稳定的肉伤和甲伤，以及标准的35m基础射程，伤害更稳定下限更高。<span style='color:red;'>缺点：</span>传奇不耐削王。为了补操控需要牺牲后坐力和据枪，导致远距离性能下降，远了容易被M7、G3俘虏，近点容易被ASVAL 416一群俘虏，优势区间太小。改装费用也贵。推荐新手进阶使用。",
     mods: [
-      { name: "低改（一体消音）", code: "K437突击步枪-烽火地带-6H80OVC072GLCC97UAN1F", price: "32w" },
-      { name: "半改（一体消音 + 45发弹匣）", code: "K437突击步枪-烽火地带-6H80Q6K072GLCC97UAN1F", price: "45w" },
-      { name: "满改（45发弹匣 + XCOG 3.5倍）", code: "K437突击步枪-烽火地带-6H80PP0072GLCC97UAN1F", price: "60w" }
+      { name: "低改（一体消音）", code: "K437突击步枪-烽火地带-6H80OVC072GLCC97UAN1F", price: "32w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "balanced",
+          costStyle: "thrifty"
+        }
+      },
+      { name: "半改（一体消音 + 45发弹匣）", code: "K437突击步枪-烽火地带-6H80Q6K072GLCC97UAN1F", price: "45w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "balanced",
+          costStyle: "lavish"
+        }
+      },
+      { name: "满改（45发弹匣 + XCOG 3.5倍）", code: "K437突击步枪-烽火地带-6H80PP0072GLCC97UAN1F", price: "60w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "range",
+          costStyle: "lavish"
+        }
+      }
     ]
   },
   "MP7": {
     comment: "<span style='color:red;'>优点：</span>近战永远的爹，削了腰射一样碾碎一切（除了AS VAL）。当前版本更推荐兼顾腰射的中距离改法。<span style='color:red;'>缺点：</span>但问题是满改成本略高，并且中远距离实在太弱势，配合狙击双枪成本更高了，因此放在T2推荐。",
     mods: [
-      { name: "低改", code: "MP7冲锋枪-烽火地带-6H5EA3S072GLCC97UAN1F", price: "35w" },
-      { name: "满改", code: "MP7冲锋枪-烽火地带-6H5EA7S072GLCC97UAN1F", price: "50w" }
+      { name: "低改", code: "MP7冲锋枪-烽火地带-6H5EA3S072GLCC97UAN1F", price: "35w",
+        tags: {
+          playStyle: "aggressive",
+          engageStyle: "close",
+          costStyle: "balanced"
+        }
+      },
+      { name: "满改", code: "MP7冲锋枪-烽火地带-6H5EA7S072GLCC97UAN1F", price: "50w",
+        tags: {
+          playStyle: "aggressive",
+          engageStyle: "close",
+          costStyle: "lavish"
+        }
+      }
     ]
   },
   //T3
   "AKM": {
     comment: "我不知道谁在吹，谁爱用谁用。射速太满，稳定性又太差，近战打不过，对枪对不过。但是改枪实在便宜，推荐传统版本，新版本的两个枪管都是CJB。",
     mods: [
-      { name: "GO学长版", code: "AKM突击步枪-烽火地带-6H5OBTG072GLCC97UAN1F", price: "22w" },
-      { name: "先进后座力系统", code: "AKM突击步枪-烽火地带-6H5OB0C072GLCC97UAN1F", price: "27w" },
-      { name: "传统版", code: "AKM突击步枪-烽火地带-6GU3CPK072GLCC97UAN1F", price: "30w" }
+      { name: "GO学长版", code: "AKM突击步枪-烽火地带-6H5OBTG072GLCC97UAN1F", price: "22w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "close",
+          costStyle: "thrifty"
+        }
+      },
+      { name: "先进后座力系统", code: "AKM突击步枪-烽火地带-6H5OB0C072GLCC97UAN1F", price: "27w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "balanced",
+          costStyle: "thrifty"
+        }
+      },
+      { name: "传统版", code: "AKM突击步枪-烽火地带-6GU3CPK072GLCC97UAN1F", price: "30w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "balanced",
+          costStyle: "thrifty"
+        }
+      }
     ]
   },
   "AUG": {
     comment: "宝宝巴士。稳定性好，低成本享受中远距离优势。但是中远距离对枪破甲能力又太差了。",
     mods: [
-      { name: "低改三倍镜集成枪管", code: "AUG突击步枪-烽火地带-6H5OC8C072GLCC97UAN1F", price: "27w" },
-      { name: "低改一体消音枪管", code: "AUG突击步枪-烽火地带-6GU3DFG072GLCC97UAN1F", price: "30w" }
+      { name: "低改三倍镜集成枪管", code: "AUG突击步枪-烽火地带-6H5OC8C072GLCC97UAN1F", price: "27w",
+        tags: {
+          playStyle: "conservative",
+          engageStyle: "range",
+          costStyle: "thrifty"
+        }
+      },
+      { name: "低改一体消音枪管", code: "AUG突击步枪-烽火地带-6GU3DFG072GLCC97UAN1F", price: "30w",
+        tags: {
+          playStyle: "conservative",
+          engageStyle: "range",
+          costStyle: "balanced"
+        }
+      }
     ]
   },
   "AK-12": {
     comment: "高破甲，不错的射速和低成本的改装方案，但是肉伤太低太低实在没法用。",
     mods: [
-      { name: "腰射版", code: "AK-12突击步枪-烽火地带-6H5OCKC072GLCC97UAN1F", price: "33w" },
-      { name: "均衡版", code: "AK-12突击步枪-烽火地带-6H5OCPO072GLCC97UAN1F", price: "30w" }
+      { name: "腰射版", code: "AK-12突击步枪-烽火地带-6H5OCKC072GLCC97UAN1F", price: "33w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "close",
+          costStyle: "balanced"
+        }
+      },
+      { name: "均衡版", code: "AK-12突击步枪-烽火地带-6H5OCPO072GLCC97UAN1F", price: "30w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "balanced",
+          costStyle: "balanced"
+        }
+      }
     ]
   },
   "KC-17": {
     comment: "跟AK12一样，30的肉伤实在太烂了。",
     mods: [
-      { name: "低改", code: "KC17突击步枪-烽火地带-6H5O9JG072GLCC97UAN1F", price: "30w" }
+      { name: "低改", code: "KC17突击步枪-烽火地带-6H5O9JG072GLCC97UAN1F", price: "30w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "balanced",
+          costStyle: "thrifty"
+        }
+      }
     ]
   },
   "ASH-12": {
     comment: "你会玩这就是T1，你不会玩这就是垃圾。巨高的单发伤害，但是超烂的稳定性。",
     mods: [
-      { name: "野狗凑监狱战备用的", code: "ASh-12战斗步枪-烽火地带-6H5OD4S072GLCC97UAN1F", price: "33w" },
-      { name: "满改", code: "ASh-12战斗步枪-烽火地带-6H5OD8K072GLCC97UAN1F", price: "58w" }
+      { name: "野狗凑监狱战备用的", code: "ASh-12战斗步枪-烽火地带-6H5OD4S072GLCC97UAN1F", price: "33w",
+        tags: {
+          playStyle: "aggressive",
+          engageStyle: "close",
+          costStyle: "thrifty"
+        }
+      },
+      { name: "满改", code: "ASh-12战斗步枪-烽火地带-6H5OD8K072GLCC97UAN1F", price: "58w",
+        tags: {
+          playStyle: "aggressive",
+          engageStyle: "balanced",
+          costStyle: "lavish"
+        }
+      }
     ]
   },
   "SCAR-H": {
     comment: "M14的李鬼，AK的弟弟。",
     mods: [
-      { name: "低低低低改", code: "SCAR-H战斗步枪-烽火地带-6H5ODH0072GLCC97UAN1F", price: "20w" }
+      { name: "低低低低改", code: "SCAR-H战斗步枪-烽火地带-6H5ODH0072GLCC97UAN1F", price: "20w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "balanced",
+          costStyle: "thrifty"
+        }
+      }
     ]
   },
   //T4
   "G3": {
     comment: "20w的枪让你中远距离不虚任何步枪。什么？对面贴了？那我先把子弹塞裤裆里。",
     mods: [
-      { name: "低改", code: "G3战斗步枪-烽火地带-6H5ODPO072GLCC97UAN1F", price: "18w" }
+      { name: "低改", code: "G3战斗步枪-烽火地带-6H5ODPO072GLCC97UAN1F", price: "18w",
+        tags: {
+          playStyle: "conservative",
+          engageStyle: "range",
+          costStyle: "thrifty"
+        }
+      }
     ]
   },
   "QBZ95-1": {
     comment: "便宜版的AK12，还有爆头增伤，实在想不出有什么黑点。问就是20w满改。",
     mods: [
-      { name: "10w机密究极丐版之打不死人别赖我", code: "QBZ95-1突击步枪-烽火地带-6H5GR08072GLCC97UAN1F", price: "9.8w" },
-      { name: "半改（完美！）", code: "QBZ95-1突击步枪-烽火地带-6H5OEL8072GLCC97UAN1F", price: "15w" },
-      { name: "满改（超豪华版本）", code: "QBZ95-1突击步枪-烽火地带-6H5OEFC072GLCC97UAN1F", price: "30w" }
+      { name: "10w机密究极丐版之打不死人别赖我", code: "QBZ95-1突击步枪-烽火地带-6H5GR08072GLCC97UAN1F", price: "9.8w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "balanced",
+          costStyle: "thrifty"
+        }
+      },
+      { name: "半改（完美！）", code: "QBZ95-1突击步枪-烽火地带-6H5OEL8072GLCC97UAN1F", price: "15w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "range",
+          costStyle: "balanced"
+        }
+      },
+      { name: "满改（超豪华版本）", code: "QBZ95-1突击步枪-烽火地带-6H5OEFC072GLCC97UAN1F", price: "30w",
+        tags: {
+          playStyle: "balanced",
+          engageStyle: "range",
+          costStyle: "balanced"
+        }
+      }
     ]
   },
   "MP5": {
     comment: "10w最强腰射机密枪。只要不碰5甲，它就是爹。",
     mods: [
-      { name: "腰射", code: "MP5冲锋枪-烽火地带-6GU3CU8072GLCC97UAN1F", price: "12w" }
+      { name: "腰射", code: "MP5冲锋枪-烽火地带-6GU3CU8072GLCC97UAN1F", price: "12w",
+        tags: {
+          playStyle: "aggressive",
+          engageStyle: "close",
+          costStyle: "thrifty"
+        }
+      }
     ]
   }
 };
@@ -348,6 +714,9 @@ const weaponData = {
         document.getElementById('weaponComment').innerHTML = data.comment || "暂无评价";
         document.getElementById('weaponMods').innerHTML = mods.map(m => `
           <div><b>${m.name}</b></div>
+          ${m.tags ? `<div class="mod-tags">${Object.entries(m.tags).map(([key, value]) => 
+            `<span class="mod-tag">${key}: ${value}</span>`
+          ).join('')}</div>` : ''}
           <div>代码: ${m.code}</div>
           <div>价格: ${m.price}</div>
         `).join('<hr>');
