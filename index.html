@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>武器改装交互图</title>
+<style>
+  body { 
+    display: flex; 
+    font-family: sans-serif; 
+    flex-direction: column;
+    align-items: center;
+  }
+  #details {
+    margin-left: 20px;
+    padding: 10px;
+    width: 320px;
+    border: 1px solid #ccc;
+    background: #fafafa;
+  }
+  #content {
+    display: flex;
+    margin-bottom: 20px;
+  }
+  #legend {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    background: #fafafa;
+    width: 900px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+  }
+  .legend-color {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #000;
+    margin-right: 10px;
+  }
+  #weaponComment {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f0f0f0;
+    border-radius: 5px;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<div id="content">
+  <canvas id="mapCanvas" width="900" height="900" style="border:1px solid #ccc;"></canvas>
+
+  <div id="details">
+    <h3>改装方案</h3>
+    <div id="weaponName">点击武器查看方案</div>
+    <div id="weaponMods"></div>
+    <div id="weaponComment"></div>
+  </div>
+</div>
+
+<div id="legend">
+  <h3>武器等级图例</h3>
+  <div class="legend-item"><div class="legend-color" style="background-color: red;"></div><div>T1 - 版本答案</div></div>
+  <div class="legend-item"><div class="legend-color" style="background-color: orange;"></div><div>T2 - 有特长的枪</div></div>
+  <div class="legend-item"><div class="legend-color" style="background-color: yellow;"></div><div>T3 - 开枪装装样子</div></div>
+  <div class="legend-item"><div class="legend-color" style="background-color: green;"></div><div>T4 - 除了便宜没有存在的意义</div></div>
+</div>
+
+<script>
+const canvas = document.getElementById('mapCanvas');
+const ctx = canvas.getContext('2d');
+
+const centerX = canvas.width / 2;
+const centerY = canvas.height / 2;
+
+// ===== 可调参数 =====
+const logicRange = 10;                  // 逻辑坐标范围
+const pointRadius = 10;                 // 圆点半径
+const outlineColor = "#000";            // 圆点轮廓颜色
+const outlineWidth = 3;                 // 圆点轮廓粗细
+const labelOffset = 15;                 // 名称标签与点的水平偏移量
+// ====================
+
+const scale = (canvas.width / 2) / logicRange; // 每单位逻辑坐标对应像素
+
+// 绘制坐标轴和象限
+function drawAxes() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 2;
+
+  // X 轴
+  ctx.beginPath();
+  ctx.moveTo(0, centerY);
+  ctx.lineTo(canvas.width, centerY);
+  ctx.stroke();
+
+  // Y 轴
+  ctx.beginPath();
+  ctx.moveTo(centerX, 0);
+  ctx.lineTo(centerX, canvas.height);
+  ctx.stroke();
+
+  // 坐标轴标签
+  ctx.font = "20px sans-serif";
+  ctx.fillStyle = "#000";
+  ctx.textAlign = "center";
+  ctx.fillText("控枪容易程度 →", canvas.width - 100, centerY - 10);
+
+  ctx.save();
+  ctx.translate(centerX - 60, 50);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText("作战距离 →", 0, 0);
+  ctx.restore();
+
+  // 象限标签
+  ctx.font = "bold 60px sans-serif";
+  ctx.fillStyle = "rgba(200,200,200,0.5)";
+  ctx.textAlign = "center";
+  ctx.fillText("被狙击完爆区", centerX - 200, centerY - 200);
+  ctx.fillText("新手区", centerX + 200, centerY - 200);
+  ctx.fillText("猛男区", centerX - 200, centerY + 200);
+  ctx.fillText("进阶区", centerX + 200, centerY + 200);
+}
+
+// 武器数据（逻辑坐标）
+const weapons = [
+  { name: "M4A1", x: 0, y: 0, color: "green" },
+  //T1
+  { name: "M14", x: -6, y: -4, color: "red" },
+  { name: "AS VAL", x: -6, y: -6, color: "red" },
+  { name: "腾龙", x: 3, y: 1, color: "red" },
+  { name: "SR-3M", x: 5, y: -6, color: "red" },
+  //T2
+  { name: "M7", x: -1, y: 5, color: "orange" },
+  { name: "K416", x: 4, y: -4, color: "orange" },
+  { name: "K437", x: 4, y: 4, color: "orange" },
+  { name: "MP7", x: 7, y: -9, color: "orange" },
+  //T3
+  { name: "AKM", x: -3, y: 1, color: "yellow" },
+  { name: "AUG", x: 8, y: 7, color: "yellow" },
+  { name: "AK-12", x: 5, y: 5, color: "yellow" },
+  { name: "KC-17", x: -2, y: 5, color: "yellow" },
+  { name: "ASH-12", x: -9, y: 0, color: "yellow" },
+  { name: "SCAR-H", x: -2, y: 2, color: "yellow" },
+  //T4
+  { name: "G3", x: 0, y: 7.5, color: "green" },
+  { name: "QBZ95-1", x: 8, y: 6.5, color: "green" },
+  { name: "MP5", x: 9, y: -7, color: "green" }
+];
+
+// 改装方案和评语
+const weaponData = {
+  "M4A1": {
+    comment: "伤害不足，准心乱跳。垃圾中的战斗机，新手教学用枪。",
+    mods: [
+      { name: "屎枪一把，纯粹做锚点用", code: "不值得多花一分钟用它", price: "不值得多花一分钱改它" }
+    ]
+  },
+  //T1
+  "M14": {
+    comment: "伤害足够，但是射程是假的，打中距离稳定性不足。目前操控速度被削弱，强度明显降低。",
+    mods: [
+      { name: "低改", code: "M14射手步枪-烽火地带-6H5D9D4072GLCC97UAN1F", price: "55w" },
+      { name: "满改", code: "M14射手步枪-烽火地带-6H5DA1K072GLCC97UAN1F", price: "70w" }
+    ]
+  },
+  "腾龙": {
+    comment: "版本的王，策划爱国之作，好用爱用。两枪爆头，小口径之王。",
+    mods: [
+      { name: "烂改", code: "腾龙突击步枪-烽火地带-6H5DAG4072GLCC97UAN1F", price: "36w" },
+      { name: "满改", code: "腾龙突击步枪-烽火地带-6H5DAKC072GLCC97UAN1F", price: "50w" },
+      { name: "近距离版", code: "腾龙突击步枪-烽火地带-6H5DAO8072GLCC97UAN1F", price: "30w" }
+    ]
+  },
+  "AS VAL": {
+    comment: "近距离俘虏任何武器，究极融甲枪。难操控，中距离开始变弱，适合有控枪能力的高手。",
+    mods: [
+      { name: "低改", code: "AS Val突击步枪-烽火地带-6H5DB3S072GLCC97UAN1F", price: "30w" },
+      { name: "满改", code: "AS Val突击步枪-烽火地带-6H5DB6S072GLCC97UAN1F", price: "50w" }
+    ]
+  },
+  "SR-3M": {
+    comment: "高额伤害让他衰减后还能和T2武器掰掰腕子，同时在近距离除了大爹枪以外都能有优势，并且腰射没有被削弱，双伤很高，控枪难度也低，非常推荐进阶新手使用。",
+    mods: [
+      { name: "100腰射版", code: "SR-3M紧凑突击步枪-烽火地带-6H5DBCK072GLCC97UAN1F", price: "35w" },
+      { name: "均衡", code: "SR-3M紧凑突击步枪-烽火地带-6H5DBNK072GLCC97UAN1F", price: "40w" },
+      { name: "这枪不适合满改", code: "改满了打中距离还是不行", price: "别多花冤枉钱了" }
+    ]
+  },
+  //T2
+  "M7": {
+    comment: "加强后(堤风超长枪管方案)中远距离伤害可观，最大问题是贴脸打不过的枪太多了，射速硬伤，实在摸不到T1。",
+    mods: [
+      { name: "低改", code: "M7战斗步枪-烽火地带-6H5E6H8072GLCC97UAN1F", price: "38w" },
+      { name: "满改", code: "M7战斗步枪-烽火地带-6H5E6OG072GLCC97UAN1F", price: "50w" }
+    ]
+  },
+  "K416": {
+    comment: "稳定性高，改法多样，配件丰富，适合新手进阶。近距离面对优势武器有一战之力，同时半改方案也能在中距离作战中有发挥，满改更是能全距离通吃。",
+    mods: [
+      { name: "低改", code: "K416突击步枪-烽火地带-6H5E75C072GLCC97UAN1F", price: "38w" },
+      { name: "满改", code: "K416突击步枪-烽火地带-6H5E80K072GLCC97UAN1F", price: "60w" }
+    ]
+  },
+  "K437": {
+    comment: "优点：稳定的肉伤和甲伤，以及标准的35m基础射程，伤害更稳定下限更高。缺点：传奇不耐削王。为了补操控需要牺牲后坐力和据枪，导致远距离性能下降，远了容易被M7、G3俘虏，近点容易被ASVAL 416一群俘虏，优势区间太小。改装费用也贵。推荐新手进阶使用。",
+    mods: [
+      { name: "低改（一体消音）", code: "K437突击步枪-烽火地带-6H80OVC072GLCC97UAN1F", price: "32w" },
+      { name: "半改（一体消音 + 45发弹匣）", code: "K437突击步枪-烽火地带-6H80Q6K072GLCC97UAN1F", price: "45w" },
+      { name: "满改（45发弹匣 + XCOG 3.5倍）", code: "K437突击步枪-烽火地带-6H80PP0072GLCC97UAN1F", price: "60w" }
+    ]
+  },
+  "MP7": {
+    comment: "近战永远的爹，削了腰射一样碾碎一切。当前版本更推荐兼顾腰射的中距离改法，但问题是满改成本略高，并且中远距离实在太弱势，配合狙击双枪成本更高了，因此放在T2推荐。",
+    mods: [
+      { name: "低改", code: "MP7冲锋枪-烽火地带-6H5EA3S072GLCC97UAN1F", price: "35w" },
+      { name: "满改", code: "MP7冲锋枪-烽火地带-6H5EA7S072GLCC97UAN1F", price: "50w" }
+    ]
+  },
+  //T3
+  "AKM": {
+    comment: "我不知道谁在吹，谁爱用谁用。射速太满，稳定性又太差，近战打不过，对枪对不过。但是改枪实在便宜，推荐传统版本，新版本的两个枪管都是CJB。",
+    mods: [
+      { name: "GO学长版", code: "AKM突击步枪-烽火地带-6H5OBTG072GLCC97UAN1F", price: "22w" },
+      { name: "先进后座力系统", code: "AKM突击步枪-烽火地带-6H5OB0C072GLCC97UAN1F", price: "27w" },
+      { name: "传统版", code: "AKM突击步枪-烽火地带-6GU3CPK072GLCC97UAN1F", price: "30w" }
+    ]
+  },
+  "AUG": {
+    comment: "宝宝巴士。稳定性好，低成本享受中远距离优势。但是中远距离对枪破甲能力又太差了。",
+    mods: [
+      { name: "低改三倍镜集成枪管", code: "AUG突击步枪-烽火地带-6H5OC8C072GLCC97UAN1F", price: "27w" },
+      { name: "低改一体消音枪管", code: "AUG突击步枪-烽火地带-6GU3DFG072GLCC97UAN1F", price: "30w" }
+    ]
+  },
+  "AK-12": {
+    comment: "高破甲，不错的射速和低成本的改装方案，但是肉伤太低太低实在没法用。",
+    mods: [
+      { name: "腰射版", code: "AK-12突击步枪-烽火地带-6H5OCKC072GLCC97UAN1F", price: "33w" },
+      { name: "均衡版", code: "AK-12突击步枪-烽火地带-6H5OCPO072GLCC97UAN1F", price: "30w" }
+    ]
+  },
+  "KC-17": {
+    comment: "跟AK12一样，30的肉伤实在太烂了。",
+    mods: [
+      { name: "低改", code: "KC17突击步枪-烽火地带-6H5O9JG072GLCC97UAN1F", price: "30w" }
+    ]
+  },
+  "ASH-12": {
+    comment: "你会玩这就是T1，你不会玩这就是垃圾。巨高的单发伤害，但是超烂的稳定性。",
+    mods: [
+      { name: "野狗凑监狱战备用的", code: "ASh-12战斗步枪-烽火地带-6H5OD4S072GLCC97UAN1F", price: "33w" },
+      { name: "满改", code: "ASh-12战斗步枪-烽火地带-6H5OD8K072GLCC97UAN1F", price: "58w" }
+    ]
+  },
+  "SCAR-H": {
+    comment: "M14的李鬼，AK的弟弟。",
+    mods: [
+      { name: "低低低低改", code: "SCAR-H战斗步枪-烽火地带-6H5ODH0072GLCC97UAN1F", price: "20w" }
+    ]
+  },
+  //T4
+  "G3": {
+    comment: "20w的枪让你中远距离不虚任何步枪。什么？对面贴了？那我先把子弹塞裤裆里。",
+    mods: [
+      { name: "低改", code: "G3战斗步枪-烽火地带-6H5ODPO072GLCC97UAN1F", price: "18w" }
+    ]
+  },
+  "QBZ95-1": {
+    comment: "便宜版的AK12，还有爆头增伤，实在想不出有什么黑点。问就是20w满改。",
+    mods: [
+      { name: "10w机密究极丐版之打不死人别赖我", code: "QBZ95-1突击步枪-烽火地带-6H5GR08072GLCC97UAN1F", price: "9.8w" },
+      { name: "半改（完美！）", code: "QBZ95-1突击步枪-烽火地带-6H5OEL8072GLCC97UAN1F", price: "15w" },
+      { name: "满改（超豪华版本）", code: "QBZ95-1突击步枪-烽火地带-6H5OEFC072GLCC97UAN1F", price: "30w" }
+    ]
+  },
+  "MP5": {
+    comment: "10w最强腰射机密枪。只要不碰5甲，它就是爹。",
+    mods: [
+      { name: "腰射", code: "MP5冲锋枪-烽火地带-6GU3CU8072GLCC97UAN1F", price: "12w" }
+    ]
+  }
+};
+
+// 逻辑坐标转像素坐标
+function logicToPixelX(x) {
+  return centerX + x * scale;
+}
+function logicToPixelY(y) {
+  return centerY - y * scale;
+}
+
+// 绘制武器点
+function drawWeapons() {
+  weapons.forEach(w => {
+    const pixelX = logicToPixelX(w.x);
+    const pixelY = logicToPixelY(w.y);
+    
+    // 绘制圆点
+    ctx.beginPath();
+    ctx.arc(pixelX, pixelY, pointRadius, 0, Math.PI * 2);
+    ctx.fillStyle = w.color;
+    ctx.fill();
+    ctx.strokeStyle = outlineColor;
+    ctx.lineWidth = outlineWidth;
+    ctx.stroke();
+    
+    // 绘制武器名称标签
+    ctx.font = "14px sans-serif";
+    ctx.fillStyle = "#000";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(w.name, pixelX + labelOffset, pixelY);
+  });
+}
+
+// 点击事件
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  weapons.forEach(w => {
+    const dx = mouseX - logicToPixelX(w.x);
+    const dy = mouseY - logicToPixelY(w.y);
+    if (Math.sqrt(dx*dx + dy*dy) < pointRadius) {
+      const data = weaponData[w.name] || {};
+      const mods = data.mods || [];
+      
+      document.getElementById('weaponName').textContent = w.name;
+      document.getElementById('weaponComment').textContent = data.comment || "暂无评价";
+      document.getElementById('weaponMods').innerHTML = mods.map(m => `
+        <div><b>${m.name}</b></div>
+        <div>代码: ${m.code}</div>
+        <div>价格: ${m.price}</div>
+      `).join('<hr>');
+    }
+  });
+});
+
+// 初始化
+drawAxes();
+drawWeapons();
+</script>
+
+</body>
+</html>
